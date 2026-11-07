@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UzType - Typing Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #111111;
+    --sub-alt: #1a1a1a;
+    --text: #e0e0e0;
+    --sub: #646669;
+    --error: #ca4754;
+    --blue: #0099B5;
+    --green: #1EB53A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Roboto Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    user-select: none;
+  }
+  header { display: flex; align-items: center; gap: 30px; padding: 10px 20px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 700; cursor: pointer; }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--blue) 0%, var(--blue) 33%, #fff 33%, #fff 66%, var(--green) 66%); border-radius: 6px; }
+  .logo-text-uz { color: var(--blue); }
+  .nav { display: flex; gap: 15px; margin-left: auto; color: var(--sub); }
+  .nav-item { cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s; }
+  .nav-item:hover { color: var(--text); background: var(--sub-alt); }
+  .nav-item svg { width: 18px; height: 18px; }
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .config { display: flex; gap: 20px; margin-bottom: 40px; background: var(--sub-alt); padding: 10px 20px; border-radius: 8px; color: var(--sub); flex-wrap: wrap; justify-content: center; }
+  .config-group { display: flex; align-items: center; gap: 10px; }
+  .config-divider { width: 1px; background: var(--sub); opacity: 0.3; margin: 0 5px; }
+  .config-btn { background: none; border: none; color: var(--sub); font-family: inherit; font-size: 14px; padding: 4px 8px; cursor: pointer; border-radius: 4px; transition: color 0.2s; }
+  .config-btn:hover { color: var(--text); }
+  .config-btn.active { color: var(--blue); }
+  .typing-area { width: 100%; position: relative; font-size: 32px; line-height: 1.5; letter-spacing: 1px; color: var(--sub); overflow: hidden; height: 140px; cursor: text; }
+  .typing-area::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: linear-gradient(to bottom, transparent, var(--bg)); pointer-events: none; }
+  .words { position: relative; transition: transform 0.2s; }
+  .word { display: inline-block; margin: 0 8px 4px 0; border-bottom: 2px solid transparent; }
+  .word.error { border-bottom-color: var(--error); }
+  .letter { color: var(--sub); }
+  .letter.correct { color: var(--text); }
+  .letter.incorrect { color: var(--error); }
+  .letter.extra { color: var(--error); opacity: 0.6; }
+  .caret { position: absolute; width: 2.5px; height: 40px; background: var(--blue); border-radius: 2px; transition: left 0.08s ease, top 0.08s ease; animation: blink 1s infinite; pointer-events: none; }
+  @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+  .typing-area.active .caret { animation: none; opacity: 1; }
+  .info-bar { display: flex; gap: 40px; margin-bottom: 20px; height: 40px; align-items: center; font-size: 28px; font-weight: 500; }
+  .info-bar .timer { color: var(--blue); }
+  .info-bar .wpm { color: var(--green); }
+  .info-bar .hidden { visibility: hidden; }
+  .restart-btn { margin-top: 40px; background: none; border: none; color: var(--sub); cursor: pointer; padding: 10px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 16px; transition: all 0.2s; }
+  .restart-btn:hover { color: var(--text); background: var(--sub-alt); }
+  .restart-btn svg { width: 20px; height: 20px; }
+  .results { display: none; width: 100%; max-width: 1000px; }
+  .results.active { display: block; }
+  .results-main { display: grid; grid-template-columns: auto 1fr; gap: 60px; margin-bottom: 40px; }
+  .stat-big .label { color: var(--blue); font-size: 18px; margin-bottom: 5px; }
+  .stat-big .value { color: var(--text); font-size: 72px; font-weight: 500; line-height: 1; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+  .stat .label { color: var(--blue); font-size: 14px; margin-bottom: 5px; }
+  .stat .value { color: var(--text); font-size: 28px; font-weight: 500; }
+  .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; padding: 20px; background: var(--sub-alt); border-radius: 12px; }
+  .chart-box { position: relative; height: 200px; }
+  .chart-box h3 { color: var(--blue); font-size: 14px; margin-bottom: 10px; font-weight: 400; }
+  .results-actions { display: flex; gap: 15px; margin-top: 30px; justify-content: center; flex-wrap: wrap; }
+  .action-btn { background: var(--sub-alt); border: none; color: var(--sub); cursor: pointer; padding: 12px 20px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 14px; transition: all 0.2s; }
+  .action-btn:hover { color: var(--text); background: var(--blue); }
+  .action-btn svg { width: 18px; height: 18px; }
+  .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal.active { display: flex; }
+  .modal-content { background: var(--bg); border: 1px solid var(--sub-alt); border-radius: 12px; padding: 30px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--sub-alt); }
+  .modal-header h2 { color: var(--blue); font-size: 24px; font-weight: 500; }
+  .modal-close { background: none; border: none; color: var(--sub); cursor: pointer; font-size: 28px; padding: 0 10px; transition: color 0.2s; }
+  .modal-close:hover { color: var(--text); }
+  .settings-group { margin-bottom: 25px; }
+  .settings-group h3 { color: var(--green); font-size: 14px; margin-bottom: 12px; font-weight: 400; text-transform: uppercase; }
+  .settings-options { display: flex; gap: 10px; flex-wrap: wrap; }
+  .settings-option { background: var(--sub-alt); border: 1px solid transparent; color: var(--sub); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 14px; transition: all 0.2s; }
+  .settings-option:hover { color: var(--text); }
+  .settings-option.active { color: var(--blue); border-color: var(--blue); }
+  .theme-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
+  .theme-color { height: 60px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; position: relative; display: flex; align-items: flex-end; justify-content: center; padding: 5px; font-size: 10px; color: #fff; }
+  .theme-color:hover { transform: scale(1.05); }
+  .theme-color.active { border-color: var(--text); }
+  .leaderboard-table { width: 100%; border-collapse: collapse; }
+  .leaderboard-table th { text-align: left; padding: 12px; color: var(--blue); font-weight: 400; font-size: 13px; border-bottom: 1px solid var(--sub-alt); text-transform: uppercase; }
+  .leaderboard-table td { padding: 12px; color: var(--text); font-size: 14px; border-bottom: 1px solid var(--sub-alt); }
+  .leaderboard-table tr:hover { background: var(--sub-alt); }
+  .rank-1 td { color: var(--green); font-weight: 700; }
+  .rank-2 td { color: var(--blue); font-weight: 500; }
+  .rank-3 td { color: var(--text); }
+  .empty-lb { text-align: center; padding: 40px; color: var(--sub); }
+  .clear-btn { background: var(--error); border: none; color: var(--text); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 12px; margin-top: 15px; }
+  .clear-btn:hover { opacity: 0.8; }
+  footer { text-align: center; color: var(--sub); padding: 20px; font-size: 12px; }
+  footer span { color: var(--green); }
+  .focus-warning { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--sub-alt); color: var(--text); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--blue); display: none; font-size: 14px; z-index: 999; }
+  .focus-warning.show { display: block; }
+  @media (max-width: 768px) {
+    .results-main { grid-template-columns: 1fr; gap: 30px; }
+    .charts-container { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .typing-area { font-size: 24px; }
+    .stat-big .value { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="location.reload()">
+    <div class="logo-icon"></div>
+    <div><span class="logo-text-uz">uz</span><span style="color:var(--text)">type</span></div>
+  </div>
+  <div class="nav">
+    <div class="nav-item" onclick="openModal('leaderboardModal')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span>leaderboard</span>
+    </div>
+    <div class="nav-item" onclick="openModal('settingsModal')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>settings</span>
+    </div>
+    <div class="nav-item" onclick="openModal('aboutModal')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>about</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="gameScreen">
+    <div class="info-bar">
+      <div class="timer" id="liveTimer"></div>
+      <div class="wpm hidden" id="liveWpm"></div>
+    </div>
+    <div class="config">
+      <div class="config-group">
+        <button class="config-btn" data-toggle="punctuation">tinish</button>
+        <button class="config-btn" data-toggle="numbers">raqamlar</button>
+      </div>
+      <div class="config-divider"></div>
+      <div class="config-group">
+        <button class="config-btn" data-mode="time">vaqt</button>
+        <button class="config-btn" data-mode="words">so'z</button>
+      </div>
+      <div class="config-divider"></div>
+      <div class="config-group" id="timeOptions">
+        <button class="config-btn time-btn" data-value="15">15</button>
+        <button class="config-btn time-btn active" data-value="30">30</button>
+        <button class="config-btn time-btn" data-value="60">60</button>
+        <button class="config-btn time-btn" data-value="120">120</button>
+      </div>
+      <div class="config-group" id="wordOptions" style="display:none;">
+        <button class="config-btn word-btn" data-value="10">10</button>
+        <button class="config-btn word-btn active" data-value="25">25</button>
+        <button class="config-btn word-btn" data-value="50">50</button>
+        <button class="config-btn word-btn" data-value="100">100</button>
+      </div>
+    </div>
+    <div class="typing-area" id="typingArea" tabindex="0">
+      <div class="caret" id="caret"></div>
+      <div class="words" id="words"></div>
+    </div>
+    <button class="restart-btn" id="restartBtn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      <span>qayta boshlash</span>
+    </button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="results-main">
+      <div class="stat-big">
+        <div class="label">wpm</div>
+        <div class="value" id="resultWpm">0</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat"><div class="label">aniqlik</div><div class="value" id="resultAcc">0%</div></div>
+        <div class="stat"><div class="label">xato</div><div class="value" id="resultErrors">0</div></div>
+        <div class="stat"><div class="label">vaqt</div><div class="value" id="resultTime">0s</div></div>
+        <div class="stat"><div class="label">raw wpm</div><div class="value" id="resultRaw">0</div></div>
+        <div class="stat"><div class="label">consistency</div><div class="value" id="resultConsistency">0%</div></div>
+        <div class="stat"><div class="label">eng yaxshi</div><div class="value" id="resultBest">0</div></div>
+      </div>
+    </div>
+    <div class="charts-container">
+      <div class="chart-box">
+        <h3>wpm vaqt davomida</h3>
+        <canvas id="wpmChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>aniqlik vaqt davomida</h3>
+        <canvas id="accuracyChart"></canvas>
+      </div>
+    </div>
+    <div class="results-actions">
+      <button class="action-btn" onclick="startGame()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        qayta boshlash
+      </button>
+      <button class="action-btn" onclick="openModal('leaderboardModal')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        leaderboard
+      </button>
+    </div>
+  </div>
+</main>
+
+<!-- Settings Modal -->
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>sozlamalar</h2>
+      <button class="modal-close" onclick="closeModal('settingsModal')">×</button>
+    </div>
+    <div class="settings-group">
+      <h3>mavzu rangi</h3>
+      <div class="theme-colors">
+        <div class="theme-color active" data-name="uzbek" style="background: linear-gradient(135deg, #0099B5, #1EB53A);" onclick="setTheme('uzbek')">uzbek</div>
+        <div class="theme-color" data-name="serenity" style="background: linear-gradient(135deg, #48566e, #2f343d);" onclick="setTheme('serenity')">serenity</div>
+        <div class="theme-color" data-name="carbon" style="background: linear-gradient(135deg, #ed6b21, #1a1a1a);" onclick="setTheme('carbon')">carbon</div>
+        <div class="theme-color" data-name="dracula" style="background: linear-gradient(135deg, #bd93f9, #282a36);" onclick="setTheme('dracula')">dracula</div>
+        <div class="theme-color" data-name="nord" style="background: linear-gradient(135deg, #88c0d0, #2e3440);" onclick="setTheme('nord')">nord</div>
+        <div class="theme-color" data-name="monokai" style="background: linear-gradient(135deg, #a6e22e, #272822);" onclick="setTheme('monokai')">monokai</div>
+      </div>
+    </div>
+    <div class="settings-group">
+      <h3>shrift o'lchami</h3>
+      <div class="settings-options">
+        <button class="settings-option" data-setting="fontSize" data-value="24">24px</button>
+        <button class="settings-option active" data-setting="fontSize" data-value="32">32px</button>
+        <button class="settings-option" data-setting="fontSize" data-value="40">40px</button>
+      </div>
+    </div>
+    <div class="settings-group">
+      <h3>ovoz effektlari</h3>
+      <div class="settings-options">
+        <button class="settings-option active" data-setting="sound" data-value="click">click</button>
+        <button class="settings-option" data-setting="sound" data-value="beep">beep</button>
+        <button class="settings-option" data-setting="sound" data-value="off">off</button>
+      </div>
+    </div>
+    <div class="settings-group">
+      <h3>caret uslubi</h3>
+      <div class="settings-options">
+        <button class="settings-option active" data-setting="caret" data-value="line">| chiziq</button>
+        <button class="settings-option" data-setting="caret" data-value="block">▮ blok</button>
+        <button class="settings-option" data-setting="caret" data-value="underline">_ pastki</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard Modal -->
+<div class="modal" id="leaderboardModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>leaderboard</h2>
+      <button class="modal-close" onclick="closeModal('leaderboardModal')">×</button>
+    </div>
+    <div id="leaderboardContent"></div>
+  </div>
+</div>
+
+<!-- About Modal -->
+<div class="modal" id="aboutModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>uztype haqida</h2>
+      <button class="modal-close" onclick="closeModal('aboutModal')">×</button>
+    </div>
+    <div style="line-height: 1.8; color: var(--sub);">
+      <p style="margin-bottom: 15px;"><span style="color: var(--blue);">uztype</span> — MonkeyType dan ilhomlangan typing test.</p>
+      <p style="margin-bottom: 15px;">O'zbekiston bayrog'i ranglarida.</p>
+      <p style="margin-bottom: 10px;"><strong style="color: var(--green);">Xususiyatlar:</strong></p>
+      <ul style="margin-left: 20px; margin-bottom: 15px;">
+        <li>Vaqt va so'z rejimlari</li>
+        <li>Tinish va raqam rejimlari</li>
+        <li>Real-time WPM va accuracy</li>
+        <li>WPM va accuracy grafiklari (Chart.js)</li>
+        <li>Leaderboard (mahalliy)</li>
+        <li>6 ta mavzu</li>
+        <li>Ovoz effektlari</li>
+        <li>Caret uslublarini o'zgartirish</li>
+      </ul>
+      <p style="margin-bottom: 10px;"><strong style="color: var(--green);">Tugmalar:</strong></p>
+      <ul style="margin-left: 20px;">
+        <li><code style="color: var(--blue);">Tab</code> / <code style="color: var(--blue);">Esc</code> — qayta boshlash</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="focus-warning" id="focusWarning">typing maydoniga bosing</div>
+
+<footer>uztype &copy; 2026 · <span>o'zbekiston</span> ranglarida</footer>
+
+<script>
+const wordList = [
+  "salom","dunyo","kitob","maktab","o'qituvchi","talaba","dars","uy","ona","ota",
+  "aka","uka","opa","singil","do'st","ish","vaqt","kun","tun","ertalab",
+  "kechqurun","yaxshi","yomon","katta","kichik","yangi","eski","chiroyli","oq","qora",
+  "ko'k","yashil","qizil","sariq","osmon","yer","suv","havo","daraxt","gul",
+  "bog'","daryo","tog'","shahar","qishloq","yo'l","mashina","poyezd","samolyot","velosiped",
+  "non","choy","sut","meva","sabzavot","olma","uzum","qovun","tarpuz","banan",
+  "go'sht","baliq","tuxum","pishloq","shakar","tuz","murch","yog'","guruch","nonushta",
+  "tushlik","kechki","oilaviy","baxtli","quvnoq","g'amgin","xursand","sevinch","mehr","muhabbat",
+  "hayot","o'lim","tug'ilish","o'sish","rivojlanish","tarix","madaniyat","san'at","musiqa","raqs",
+  "she'r","hikoya","roman","film","teatr","muzey","kutubxona","park","stadion","maydon",
+  "bolalar","kattalar","erkaklar","ayollar","yoshlar","chollar","qizlar","o'g'il","bola","odam",
+  "kompyuter","telefon","internet","dastur","sayt","ilova","o'yin","matn","rasm","video",
+  "yozish","o'qish","gapirish","eshitish","ko'rish","bilish","tushunish","o'rganmoq","o'rgatmoq","takrorlamoq",
+  "bugun","ertaga","kecha","hafta","oy","yil","soat","daqiqa","soniya","tez",
+  "sekin","baland","past","uzun","qisqa","keng","tor","chuqur","sayoz","issiq",
+  "sovuq","iliq","salqin","quruq","nam","toza","iflos","oddiy","murakkab","oson",
+  "qiyin","muhim","kerakli","foydali","zararli","xavfli","xavfsiz","bepul","qimmat","arzon",
+  "kelajak","o'tmish","hozirgi","taraqqiyot","yutuq","muvaffaqiyat","g'alaba","yengish","harakat",
+  "intilish","maqsad","orzu","istak","umid","ishonch","qat'iyat","sabr","matonat","mehnat"
+];
+const punctuation = ['.',',','!','?',';',':'];
+const numbers = ['0','1','2','3','4','5','6','7','8','9'];
+
+const themes = {
+  uzbek:   { bg:'#111111', subAlt:'#1a1a1a', text:'#e0e0e0', sub:'#646669', main:'#0099B5', accent:'#1EB53A' },
+  serenity:{ bg:'#2f343d', subAlt:'#3b4252', text:'#d8dee9', sub:'#4c566a', main:'#88c0d0', accent:'#81a1c1' },
+  carbon:  { bg:'#1a1a1a', subAlt:'#2d2d2d', text:'#e0e0e0', sub:'#666666', main:'#ed6b21', accent:'#ffb86c' },
+  dracula: { bg:'#282a36', subAlt:'#44475a', text:'#f8f8f2', sub:'#6272a4', main:'#bd93f9', accent:'#ff79c6' },
+  nord:    { bg:'#2e3440', subAlt:'#3b4252', text:'#eceff4', sub:'#4c566a', main:'#88c0d0', accent:'#81a1c1' },
+  monokai: { bg:'#272822', subAlt:'#3e3d32', text:'#f8f8f2', sub:'#75715e', main:'#a6e22e', accent:'#f92672' }
+};
+
+let mode = 'time', timeLimit = 30, wordLimit = 25;
+let punctuationMode = false, numbersMode = false;
+let words = [], currentWordIndex = 0, currentLetterIndex = 0, inputBuffer = '';
+let startTime = null, timerInterval = null, isFinished = false;
+let correctChars = 0, incorrectChars = 0, totalErrors = 0, isFocused = false;
+let wpmHistory = [], accuracyHistory = [], rawWpmHistory = [];
+let wpmChart = null, accuracyChart = null;
+
+let settings = JSON.parse(localStorage.getItem('uztypeSettings')) || {
+  theme:'uzbek', fontSize:32, sound:'click', caret:'line'
+};
+
+const typingArea = document.getElementById('typingArea');
+const wordsEl = document.getElementById('words');
+const caret = document.getElementById('caret');
+const liveTimer = document.getElementById('liveTimer');
+const liveWpm = document.getElementById('liveWpm');
+const gameScreen = document.getElementById('gameScreen');
+const results = document.getElementById('results');
+const focusWarning = document.getElementById('focusWarning');
+
+function applySettings() {
+  const t = themes[settings.theme];
+  const r = document.documentElement.style;
+  r.setProperty('--bg', t.bg);
+  r.setProperty('--sub-alt', t.subAlt);
+  r.setProperty('--text', t.text);
+  r.setProperty('--sub', t.sub);
+  r.setProperty('--blue', t.main);
+  r.setProperty('--green', t.accent);
+  typingArea.style.fontSize = settings.fontSize + 'px';
+  if (settings.caret === 'block') { caret.style.width='15px'; caret.style.height='35px'; }
+  else if (settings.caret === 'underline') { caret.style.width='15px'; caret.style.height='3px'; }
+  else { caret.style.width='2.5px'; caret.style.height='40px'; }
+  document.querySelectorAll('.settings-option').forEach(b => {
+    b.classList.toggle('active', b.dataset.setting && b.dataset.value == settings[b.dataset.setting]);
+  });
+  document.querySelectorAll('.theme-color').forEach(el => {
+    el.classList.toggle('active', el.dataset.name === settings.theme);
+  });
+}
+
+function playSound() {
+  if (settings.sound === 'off') return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (settings.sound === 'click') { osc.frequency.value=800; osc.type='square'; }
+    else { osc.frequency.value=440; osc.type='sine'; }
+    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    osc.start(); osc.stop(ctx.currentTime + 0.05);
+  } catch(e) {}
+}
+
+function generateWord() {
+  let w = wordList[Math.floor(Math.random()*wordList.length)];
+  if (punctuationMode && Math.random() < 0.3) w += punctuation[Math.floor(Math.random()*punctuation.length)];
+  if (numbersMode && Math.random() < 0.2) w += numbers[Math.floor(Math.random()*numbers.length)];
+  return w;
+}
+
+function generateWords() {
+  const count = mode === 'time' ? 100 : wordLimit;
+  const arr = [];
+  for (let i = 0; i < count; i++) arr.push(generateWord());
+  return arr;
+}
+
+function renderWords() {
+  wordsEl.innerHTML = '';
+  words.forEach((word, wi) => {
+    const wEl = document.createElement('div');
+    wEl.className = 'word';
+    wEl.dataset.index = wi;
+    word.split('').forEach((ch, li) => {
+      const lEl = document.createElement('span');
+      lEl.className = 'letter';
+      lEl.textContent = ch;
+      wEl.appendChild(lEl);
+    });
+    wordsEl.appendChild(wEl);
+  });
+}
+
+function updateCaret() {
+  const curWord = wordsEl.querySelector(`.word[data-index="${currentWordIndex}"]`);
+  if (!curWord) return;
+  const letters = curWord.querySelectorAll('.letter');
+  const areaRect = typingArea.getBoundingClientRect();
+  let targetRect, left, top;
+  if (currentLetterIndex < letters.length) {
+    targetRect = letters[currentLetterIndex].getBoundingClientRect();
+    left = targetRect.left - areaRect.left;
+  } else if (letters.length > 0) {
+    targetRect = letters[letters.length - 1].getBoundingClientRect();
+    left = targetRect.right - areaRect.left + 2;
+  } else return;
+  top = targetRect.top - areaRect.top;
+  caret.style.left = left + 'px';
+  caret.style.top = top + 'px';
+  const wordTop = curWord.getBoundingClientRect().top - areaRect.top;
+  if (wordTop > 80) {
+    const cur = parseFloat(wordsEl.style.transform?.replace('translateY(','').replace('px)','') || 0);
+    wordsEl.style.transform = `translateY(${cur - (wordTop - 40)}px)`;
+  }
+}
+
+function updateLetters() {
+  const curWord = wordsEl.querySelector(`.word[data-index="${currentWordIndex}"]`);
+  if (!curWord) return;
+  const word = words[currentWordIndex];
+  // Remove extras
+  curWord.querySelectorAll('.letter.extra').forEach(e => e.remove());
+  const letters = curWord.querySelectorAll('.letter');
+  letters.forEach((l, i) => {
+    l.classList.remove('correct','incorrect');
+    if (i < inputBuffer.length) {
+      l.classList.add(inputBuffer[i] === word[i] ? 'correct' : 'incorrect');
+    }
+  });
+  if (inputBuffer.length > word.length) {
+    for (let i = word.length; i < inputBuffer.length; i++) {
+      const ex = document.createElement('span');
+      ex.className = 'letter extra';
+      ex.textContent = inputBuffer[i];
+      curWord.appendChild(ex);
+    }
+  }
+  let hasErr = false;
+  for (let i = 0; i < Math.min(inputBuffer.length, word.length); i++) {
+    if (inputBuffer[i] !== word[i]) { hasErr = true; break; }
+  }
+  curWord.classList.toggle('error', hasErr);
+}
+
+function startGame() {
+  words = generateWords();
+  currentWordIndex = 0; currentLetterIndex = 0; inputBuffer = '';
+  startTime = null; isFinished = false;
+  correctChars = 0; incorrectChars = 0; totalErrors = 0;
+  wpmHistory = []; accuracyHistory = []; rawWpmHistory = [];
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  wordsEl.style.transform = 'translateY(0)';
+  renderWords();
+  updateCaret();
+  updateLetters();
+  gameScreen.style.display = 'block';
+  results.classList.remove('active');
+  liveTimer.textContent = mode === 'time' ? timeLimit : '';
+  liveWpm.classList.add('hidden');
+  typingArea.focus();
+}
+
+function startTimer() {
+  startTime = Date.now();
+  let lastSec = 0;
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const curSec = Math.floor(elapsed);
+    if (mode === 'time') {
+      const rem = Math.max(0, timeLimit - elapsed);
+      liveTimer.textContent = Math.ceil(rem);
+      if (rem <= 0) finishGame();
+    } else {
+      liveTimer.textContent = Math.floor(elapsed);
+    }
+    if (curSec > lastSec && curSec > 0) {
+      const min = elapsed / 60;
+      const wpm = Math.round((correctChars / 5) / min) || 0;
+      const raw = Math.round(((correctChars + incorrectChars) / 5) / min) || 0;
+      const total = correctChars + incorrectChars;
+      const acc = total > 0 ? Math.round((correctChars / total) * 100) : 100;
+      wpmHistory.push(wpm);
+      rawWpmHistory.push(raw);
+      accuracyHistory.push(acc);
+      liveWpm.textContent = wpm + ' wpm';
+      liveWpm.classList.remove('hidden');
+      lastSec = curSec;
+    }
+  }, 100);
+}
+
+function finishGame() {
+  if (isFinished) return;
+  isFinished = true;
+  clearInterval(timerInterval);
+  const elapsed = (Date.now() - startTime) / 1000;
+  const min = elapsed / 60;
+  const wpm = Math.round((correctChars / 5) / min) || 0;
+  const raw = Math.round(((correctChars + incorrectChars) / 5) / min) || 0;
+  const total = correctChars + incorrectChars;
+  const acc = total > 0 ? Math.round((correctChars / total) * 100) : 0;
+  let consistency = 0;
+  if (wpmHistory.length > 1) {
+    const avg = wpmHistory.reduce((a,b)=>a+b,0) / wpmHistory.length;
+    const variance = wpmHistory.reduce((s,v)=>s+Math.pow(v-avg,2),0) / wpmHistory.length;
+    consistency = Math.max(0, Math.round(100 - (Math.sqrt(variance)/avg)*100));
+  }
+  document.getElementById('resultWpm').textContent = wpm;
+  document.getElementById('resultAcc').textContent = acc + '%';
+  document.getElementById('resultErrors').textContent = totalErrors;
+  document.getElementById('resultTime').textContent = Math.round(elapsed) + 's';
+  document.getElementById('resultRaw').textContent = raw;
+  document.getElementById('resultConsistency').textContent = consistency + '%';
+  document.getElementById('resultBest').textContent = Math.max(wpm, getBestWpm());
+  saveToLeaderboard(wpm, acc, elapsed, raw, consistency);
+  renderCharts();
+  gameScreen.style.display = 'none';
+  results.classList.add('active');
+}
+
+function renderCharts() {
+  const labels = wpmHistory.map((_, i) => (i+1) + 's');
+  const mainColor = getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--green').trim();
+  const subColor = getComputedStyle(document.documentElement).getPropertyValue('--sub').trim();
+  if (wpmChart) wpmChart.destroy();
+  if (accuracyChart) accuracyChart.destroy();
+  wpmChart = new Chart(document.getElementById('wpmChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label:'wpm', data:wpmHistory, borderColor:mainColor, backgroundColor:mainColor+'33', fill:true, tension:0.3, borderWidth:2, pointRadius:3 },
+        { label:'raw', data:rawWpmHistory, borderColor:subColor, backgroundColor:'transparent', borderDash:[5,5], tension:0.3, borderWidth:1, pointRadius:0 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:subColor } } },
+      scales:{
+        x:{ ticks:{color:subColor}, grid:{color:subColor+'22'} },
+        y:{ ticks:{color:subColor}, grid:{color:subColor+'22'} }
+      }
+    }
+  });
+  accuracyChart = new Chart(document.getElementById('accuracyChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{ label:'aniqlik %', data:accuracyHistory, borderColor:accentColor, backgroundColor:accentColor+'33', fill:true, tension:0.3, borderWidth:2, pointRadius:3 }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:subColor } } },
+      scales:{
+        x:{ ticks:{color:subColor}, grid:{color:subColor+'22'} },
+        y:{ min:0, max:100, ticks:{color:subColor}, grid:{color:subColor+'22'} }
+      }
+    }
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (isFinished) return;
+  if (!isFocused && e.key.length === 1) typingArea.focus();
+  if (e.key === 'Tab' || e.key === 'Escape') { e.preventDefault(); startGame(); return; }
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (inputBuffer.length > 0) {
+      const rem = inputBuffer[inputBuffer.length-1];
+      const exp = words[currentWordIndex][inputBuffer.length-1];
+      if (rem !== exp) totalErrors = Math.max(0, totalErrors-1);
+      inputBuffer = inputBuffer.slice(0,-1);
+      currentLetterIndex = inputBuffer.length;
+      updateLetters(); updateCaret();
+    } else if (currentWordIndex > 0) {
+      currentWordIndex--;
+      const prev = wordsEl.querySelector(`.word[data-index="${currentWordIndex}"]`);
+      inputBuffer = '';
+      prev.querySelectorAll('.letter').forEach(l => l.classList.remove('correct','incorrect','extra'));
+      prev.classList.remove('error');
+      currentLetterIndex = 0;
+      updateCaret();
+    }
+    return;
+  }
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (inputBuffer.length === 0) return;
+    submitWord();
+    return;
+  }
+  if (e.key.length === 1) {
+    e.preventDefault();
+    if (!startTime) startTimer();
+    typingArea.classList.add('active');
+    playSound();
+    const word = words[currentWordIndex];
+    inputBuffer += e.key;
+    currentLetterIndex = inputBuffer.length;
+    if (e.key === word[currentLetterIndex-1]) correctChars++;
+    else { incorrectChars++; totalErrors++; }
+    updateLetters(); updateCaret();
+  }
+});
+
+function submitWord() {
+  const word = words[currentWordIndex];
+  const typed = inputBuffer;
+  const maxLen = Math.max(word.length, typed.length);
+  for (let i = 0; i < maxLen; i++) if (typed[i] !== word[i]) totalErrors++;
+  currentWordIndex++;
+  inputBuffer = ''; currentLetterIndex = 0;
+  if (mode === 'words' && currentWordIndex >= wordLimit) { finishGame(); return; }
+  if (mode === 'time' && currentWordIndex > words.length - 30) {
+    for (let i = 0; i < 30; i++) words.push(generateWord());
+    renderWords();
+  }
+  updateLetters(); updateCaret();
+}
+
+typingArea.addEventListener('focus', () => { isFocused = true; focusWarning.classList.remove('show'); });
+typingArea.addEventListener('blur', () => {
+  isFocused = false;
+  if (!isFinished && startTime) focusWarning.classList.add('show');
+  typingArea.classList.remove('active');
+});
+typingArea.addEventListener('click', () => typingArea.focus());
+
+document.querySelectorAll('.config-btn[data-toggle]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.toggle === 'punctuation') punctuationMode = !punctuationMode;
+    else numbersMode = !numbersMode;
+    btn.classList.toggle('active');
+    startGame();
+  });
+});
+document.querySelectorAll('.config-btn[data-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    mode = btn.dataset.mode;
+    document.querySelectorAll('.config-btn[data-mode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('timeOptions').style.display = mode==='time' ? 'flex' : 'none';
+    document.getElementById('wordOptions').style.display = mode==='words' ? 'flex' : 'none';
+    startGame();
+  });
+});
+document.querySelectorAll('.time-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    timeLimit = parseInt(btn.dataset.value);
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    startGame();
+  });
+});
+document.querySelectorAll('.word-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    wordLimit = parseInt(btn.dataset.value);
+    document.querySelectorAll('.word-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    startGame();
+  });
+});
+document.getElementById('restartBtn').addEventListener('click', startGame);
+
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+  if (id === 'leaderboardModal') renderLeaderboard();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+});
+
+document.querySelectorAll('.settings-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    settings[btn.dataset.setting] = btn.dataset.value === '24' || btn.dataset.value === '32' || btn.dataset.value === '40' ? parseInt(btn.dataset.value) : btn.dataset.value;
+    localStorage.setItem('uztypeSettings', JSON.stringify(settings));
+    applySettings();
+  });
+});
+
+function setTheme(name) {
+  settings.theme = name;
+  localStorage.setItem('uztypeSettings', JSON.stringify(settings));
+  applySettings();
+}
+
+function getLeaderboard() { return JSON.parse(localStorage.getItem('uztypeLeaderboard')) || []; }
+function getBestWpm() { const lb = getLeaderboard(); return lb.length > 0 ? lb[0].wpm : 0; }
+
+function saveToLeaderboard(wpm, acc, time, raw, consistency) {
+  const lb = getLeaderboard();
+  lb.push({
+    wpm, acc, raw, consistency,
+    time: Math.round(time),
+    mode: mode + (mode==='time' ? timeLimit : wordLimit),
+    date: new Date().toLocaleDateString('uz-UZ'),
+    ts: Date.now()
+  });
+  lb.sort((a,b) => b.wpm - a.wpm);
+  localStorage.setItem('uztypeLeaderboard', JSON.stringify(lb.slice(0, 100)));
+}
+
+function renderLeaderboard() {
+  const lb = getLeaderboard();
+  const c = document.getElementById('leaderboardContent');
+  if (lb.length === 0) {
+    c.innerHTML = '<div class="empty-lb">Hali natijalar yo\'q. O\'ynang va birinchi bo\'ling!</div>';
+    return;
+  }
+  let html = '<table class="leaderboard-table"><thead><tr><th>#</th><th>WPM</th><th>Raw</th><th>Aniqlik</th><th>Consistency</th><th>Rejim</th><th>Vaqt</th><th>Sana</th></tr></thead><tbody>';
+  lb.slice(0, 30).forEach((e, i) => {
+    const cls = i < 3 ? `rank-${i+1}` : '';
+    html += `<tr class="${cls}"><td>${i+1}</td><td>${e.wpm}</td><td>${e.raw}</td><td>${e.acc}%</td><td>${e.consistency}%</td><td>${e.mode}</td><td>${e.time}s</td><td>${e.date}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  html += '<button class="clear-btn" onclick="clearLeaderboard()">tozalash</button>';
+  c.innerHTML = html;
+}
+
+function clearLeaderboard() {
+  if (confirm('Barcha natijalarni o\'chirmoqchimisiz?')) {
+    localStorage.removeItem('uztypeLeaderboard');
+    renderLeaderboard();
+  }
+}
+
+applySettings();
+startGame();
+</script>
+</body>
+</html>
